@@ -9,4 +9,26 @@ def pregunta_09():
         {"aaa": 13, "bbb": 16, "ccc": 23, ...}
     """
 
-    raise NotImplementedError
+    import pandas as pd
+            
+    data = pd.read_csv(
+    "data/data.csv.gz",
+    compression="gzip",
+    sep="\t",         
+    header=None,
+    names = ["letter", "value", "date","codes", "metrics"]
+    )
+
+    data_melt = data["metrics"].str.split(",", expand=True).melt().dropna()
+    data_melt = data_melt["value"].str.split(":", expand=True)
+    data_melt.columns = ["clave", "value"]
+
+    data_melt = data_melt.drop(["value"], axis=1).sort_values("clave")
+    conteo = data_melt["clave"].value_counts(sort = False).to_dict()
+    
+    return conteo
+
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_09()

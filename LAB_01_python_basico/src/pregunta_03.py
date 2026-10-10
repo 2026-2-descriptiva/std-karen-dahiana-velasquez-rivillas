@@ -9,4 +9,23 @@ def pregunta_03():
         [("A", 53), ("B", 36), ("C", 27), ...]
     """
 
-    raise NotImplementedError
+    import pandas as pd
+        
+    data = pd.read_csv(
+    "data/data.csv.gz",
+    compression="gzip",
+    sep="\t",         
+    header=None,
+    names = ["letter", "value", "date","codes", "metrics"]
+    ).sort_values("letter")
+    
+    list = []
+    x = data.groupby(["letter"])["value"].sum().to_dict()
+    for key, value in x.items():
+        list.append((key, value))
+
+    return list
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_03()

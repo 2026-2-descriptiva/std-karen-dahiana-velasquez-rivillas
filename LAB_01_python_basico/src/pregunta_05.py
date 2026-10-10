@@ -9,4 +9,27 @@ def pregunta_05():
         [("A", 9, 2), ("B", 9, 1), ...]
     """
 
-    raise NotImplementedError
+    import pandas as pd
+            
+    data = pd.read_csv(
+    "data/data.csv.gz",
+    compression="gzip",
+    sep="\t",         
+    header=None,
+    names = ["letter", "value", "date","codes", "metrics"]
+    ).sort_values("letter")
+
+    dict = data.groupby(["letter"])["value"].agg(["min", "max"]).to_dict()
+
+    dict_min_max = []
+    for letra in data["letter"].unique():
+        max = dict["max"][letra]
+        min = dict["min"][letra]
+        dict_min_max.append((letra, max, min))
+
+    return dict_min_max
+    #raise NotImplementedError
+
+
+if __name__ == "__main__":
+    pregunta_05()

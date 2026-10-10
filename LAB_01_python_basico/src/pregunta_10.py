@@ -11,4 +11,26 @@ def pregunta_10():
         [("E", 3, 5), ("A", 3, 4), ("B", 4, 4), ...]
     """
 
-    raise NotImplementedError
+    import pandas as pd
+
+    data = pd.read_csv(
+    "data/data.csv.gz",
+    compression="gzip",
+    sep="\t",         
+    header=None,
+    names = ["letter", "value", "date","codes", "metrics"]
+    )
+
+    data["count_metrics"] = data["metrics"].str.split(",").apply(len)
+    data["count_codes"] = data["codes"].str.split(",").apply(len)
+
+    tuplas = []
+    for _,row in data.iterrows():
+        tuplas.append((row["letter"], row["count_codes"], row["count_metrics"]))
+
+    return tuplas
+
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_10()

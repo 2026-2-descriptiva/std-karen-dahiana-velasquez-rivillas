@@ -13,4 +13,32 @@ def pregunta_06():
         [("aaa", 1, 9), ("bbb", 1, 9), ...]
     """
 
-    raise NotImplementedError
+    import pandas as pd
+        
+    data = pd.read_csv(
+    "data/data.csv.gz",
+    compression="gzip",
+    sep="\t",         
+    header=None,
+    names = ["letter", "value", "date","codes", "metrics"]
+    )
+
+    data_melt = data["metrics"].str.split(",", expand=True).melt().dropna()
+    data_melt = data_melt["value"].str.split(":", expand=True)
+    data_melt.columns = ["clave", "value"]
+    data_melt["value"] = pd.to_numeric(data_melt["value"])
+
+    dict = data_melt.groupby(["clave"])["value"].agg(["min", "max"]).to_dict()
+
+    dict_min_max = []
+    for clave in sorted(dict["min"].keys()):
+        min = dict["min"][clave]
+        max = dict["max"][clave]
+        dict_min_max.append((clave, min, max))
+
+    return dict_min_max
+
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_06()

@@ -10,4 +10,22 @@ def pregunta_11():
         {"a": 122, "b": 49, "c": 91, ...}
     """
 
-    raise NotImplementedError
+    import pandas as pd
+    
+    data = pd.read_csv(
+    "data/data.csv.gz",
+    compression="gzip",
+    sep="\t",         
+    header=None,
+    names = ["letter", "value", "date","codes", "metrics"]
+    ).sort_values("letter")
+
+    data["codes_list"] = data["codes"].str.split(",")
+    df_exploded = data.explode("codes_list")
+    result = df_exploded.groupby(["codes_list"])["value"].agg("sum").to_dict()
+
+    return result
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_11()
