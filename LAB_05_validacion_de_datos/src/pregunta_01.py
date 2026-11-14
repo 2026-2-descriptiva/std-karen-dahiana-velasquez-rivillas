@@ -1,3 +1,7 @@
+import pandas as pd
+import json
+import numpy as np
+
 def main():
     """
     Antes de limpiar o analizar un conjunto de datos, un analista debe
@@ -48,4 +52,36 @@ def main():
         }
     """
 
-    raise NotImplementedError
+    data = pd.read_csv('data/ventas.csv.gz', compression='gzip') 
+    data.columns = [col.strip().lower().replace(' ', '_') for col in data.columns]
+
+    columnas_requeridas = ['supplier_id', 'supplier','country', 'city', 'purchase_date', 'amount', 'discount', 'weight','units', 'unit_price','contact_email']
+
+    result = {
+        "row_count" : data.shape[0],
+        "column_count" : data.shape[1],
+        "missing_required_columns" : [col for col in columnas_requeridas if col not in data.columns],
+        "unexpected_columns" : [col for col in data.columns if col not in columnas_requeridas],
+        "duplicate_row_count" : data.duplicated().sum(),
+        "duplicate_supplier_id_row_count" : data.duplicated(subset=['supplier_id'],keep=False).sum(),
+        "missing_value_count_by_column" : data.replace("N/A", np.nan).isnull().sum().to_dict(),
+        "invalid_email_count" : data[data['contact_email'].str.contains('@') == False].shape[0],
+        "invalid_unit_count" : data[data["units"].notna()][(data["units"] % 1 != 0)].shape[0],
+        "country_values" : sorted(data["country"].unique())
+        
+    }
+
+    def to_native(o):
+      if isinstance(o, np.generic):
+          return o.item()
+      if isinstance(o, np.ndarray):
+          return o.tolist()
+      raise TypeError(f"{type(o).__name__} no es serializable")
+
+    with open("submission/data_quality_report.json", "w", encoding="utf-8") as f:
+      json.dump(result, f, ensure_ascii=False, indent=2, default=to_native)
+
+
+    return result
+
+    #raise NotImplementedError
