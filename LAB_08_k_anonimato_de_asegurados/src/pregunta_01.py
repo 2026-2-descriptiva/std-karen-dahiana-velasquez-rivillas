@@ -1,3 +1,8 @@
+import json
+import os
+import numpy as np
+import pandas as pd
+
 def pregunta_01():
     """
     Una aseguradora quiere publicar datos de sus afiliados para que un grupo
@@ -80,4 +85,85 @@ def pregunta_01():
         }
     """
 
-    raise NotImplementedError
+    
+
+    df = pd.read_csv("data/insurance.csv.gz", compression="gzip")
+    original_qi = ["age", "sex", "bmi", "children", "region"]
+    original_sizes = df.groupby(original_qi)["age"].transform("size")
+
+    df["age_group"] = pd.cut(
+        df["age"],
+        bins=[18, 30, 40, 50, 65],
+        labels=["18-29", "30-39", "40-49", "50-64"],
+        right=False,
+    )
+    df["bmi_group"] = pd.cut(
+        df["bmi"],
+        bins=[-np.inf, 18.5, 25, 30, np.inf],
+        labels=["bajo peso", "normal", "sobrepeso", "obesidad"],
+        right=False,
+    )
+    df["children_group"] = pd.cut(
+        df["children"],
+        bins=[-np.inf, 1, 3, np.inf],
+        labels=["0", "1-2", "3+"],
+        right=False,
+    )
+    df["is_smoker"] = df["smoker"].eq("yes")
+
+    schemes_qi = {
+        "with_children": ["age_group", "sex", "bmi_group", "children_group", "region"],
+        "without_children": ["age_group", "sex", "bmi_group", "region"],
+    }
+
+    schemes = {}
+    published_by_scheme = {}
+
+    for name, qi in schemes_qi.items():
+        grouped = df.groupby(qi, observed=True)
+        sizes = grouped["age"].transform("size")
+        keep = sizes >= 5
+        published = df[keep]
+
+        pub_grouped = published.groupby(qi, observed=True)
+        smoker_share = pub_grouped["is_smoker"].transform("mean")
+        no_diversity = smoker_share.isin([0.0, 1.0])
+
+        schemes[name] = {
+            "quasi_identifiers": qi,
+            "equivalence_classes": int(grouped.ngroups),
+            "k_before_suppression": int(sizes.min()),
+            "suppressed_records": int((~keep).sum()),
+            "published_records": int(keep.sum()),
+            "published_classes": int(pub_grouped.ngroups),
+            "classes_without_smoker_diversity": int(
+                published[no_diversity].groupby(qi, observed=True).ngroups
+            ),
+            "records_without_smoker_diversity": int(no_diversity.sum()),
+        }
+        published_by_scheme[name] = published
+
+    selected = min(schemes, key=lambda s: schemes[s]["suppressed_records"])
+    final = published_by_scheme[selected]
+
+    report = {
+        "original_k": int(original_sizes.min()),
+        "original_unique_records": int((original_sizes == 1).sum()),
+        "schemes": schemes,
+        "selected_scheme": selected,
+        "mean_charges_original": float(df["charges"].mean()),
+        "mean_charges_published": float(final["charges"].mean()),
+        "smoker_rate_original": float(df["is_smoker"].mean()),
+        "smoker_rate_published": float(final["is_smoker"].mean()),
+    }
+
+    with open("submission/privacy_report.json", "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+
+    final[schemes_qi[selected] + ["smoker", "charges"]].to_csv(
+        "submission/insurance_published.csv", index=False
+    )
+
+    return report
+
+    #raise NotImplementedError
