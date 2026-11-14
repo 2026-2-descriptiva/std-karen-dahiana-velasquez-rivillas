@@ -1,5 +1,6 @@
 import pandas as pd
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def build_cohort_analysis() -> pd.DataFrame:
     """
@@ -44,4 +45,51 @@ def build_cohort_analysis() -> pd.DataFrame:
         ...
     """
 
-    raise NotImplementedError
+    data = pd.read_csv('data/sales.csv.gz', compression='gzip')
+
+    data["OrderDate"] = pd.to_datetime(data["OrderDate"])
+
+    data["cohort_month"] = (
+        data.groupby("CustomerID")["OrderDate"].transform("min").dt.to_period("M")
+    )
+
+    data["period_index"] = (
+    data["OrderDate"].dt.month - data["cohort_month"].dt.month
+    )
+
+    cohort_size = data[data["period_index"] == 0].groupby("cohort_month").agg(
+    cohort_size=("CustomerID", "nunique")
+)
+
+    cohort_retention = data.groupby(["cohort_month", "period_index"], as_index=False).agg(
+        active_customers=("CustomerID", "nunique")
+    ).sort_values(["cohort_month", "period_index"])
+
+    cohort_retention = cohort_retention.merge(cohort_size, on="cohort_month")
+
+    cohort_retention["retention_rate"] = (
+        cohort_retention["active_customers"] / cohort_retention["cohort_size"]
+    )
+    cohort_retention = cohort_retention[["cohort_month", "period_index", "active_customers", "cohort_size", "retention_rate"]]
+    cohort_retention.to_csv("submission/cohort_retention.csv", index=False)
+
+
+
+    cohort_retention_heatmap_df = cohort_retention.copy()
+    cohort_retention_heatmap_df["retention_rate"] = cohort_retention["retention_rate"] * 100 
+
+    cohort_retention_heatmap = cohort_retention_heatmap_df.pivot(
+        index="period_index", columns="cohort_month", values="retention_rate"
+    )
+
+    fig, ax = plt.subplots()
+    ax = sns.heatmap(cohort_retention_heatmap, annot=True, fmt=".2f", ax=ax)
+
+    ax.set_xlabel("Cohort month")
+    ax.set_ylabel("Period index")
+    ax.set_title("Retention rate by cohort month and period index")
+    fig.savefig("submission/cohort_retention_heatmap.png")
+
+    return cohort_retention
+
+    #raise NotImplementedError
