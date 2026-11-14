@@ -21,4 +21,10 @@
 --  0  2018     6
 --
 --  Escriba su consulta debajo de esta línea.
---
+
+SELECT 
+    strftime('%Y', c14) AS YEAR, 
+    COUNT(*) AS CANT
+FROM tbl1
+WHERE strftime('%Y', c14) = '2018';
+
