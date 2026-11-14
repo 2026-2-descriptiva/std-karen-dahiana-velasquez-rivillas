@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def pregunta_01() -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Una autoridad aeronáutica publica cada año un ranking de aerolíneas según
@@ -58,4 +57,46 @@ def pregunta_01() -> tuple[pd.DataFrame, pd.DataFrame]:
         ...
     """
 
-    raise NotImplementedError
+    data = pd.read_csv('data/flights_by_carrier_day_hour.csv.gz', compression='gzip')
+    data["delay_rate"] = data.delayed_departure_15_flights / data.operated_flights
+
+    hourly_delay_rates = data.groupby("scheduled_departure_hour").agg(
+    {"operated_flights": "sum", 
+    "delayed_departure_15_flights": "sum",
+    }
+    ).assign(delay_rate=lambda x: x["delayed_departure_15_flights"] / x["operated_flights"]
+    ).sort_values("scheduled_departure_hour").reset_index()
+
+    hourly_delay_rates.to_csv("submission/hourly_delay_rates.csv", index=False)
+
+    df = data.copy()
+    hourly_rate = hourly_delay_rates.set_index("scheduled_departure_hour")["delay_rate"]
+
+    df["expected"] = df["operated_flights"] * df["scheduled_departure_hour"].map(hourly_rate)
+
+    carrier_adjusted_delays = df.groupby("reporting_airline").agg(
+        operated_flights=("operated_flights", "sum"),
+        delayed_departure_15_flights=("delayed_departure_15_flights", "sum"),
+        expected_delayed_flights=("expected", "sum"),   
+    ).reset_index()
+
+    carrier_adjusted_delays = carrier_adjusted_delays[carrier_adjusted_delays["operated_flights"] > 100000]
+
+    carrier_adjusted_delays["delay_rate"] = carrier_adjusted_delays["delayed_departure_15_flights"] / carrier_adjusted_delays["operated_flights"]
+    carrier_adjusted_delays["observed_to_expected_ratio"] = carrier_adjusted_delays["delayed_departure_15_flights"] / carrier_adjusted_delays["expected_delayed_flights"]
+
+
+    carrier_adjusted_delays["crude_rank"] = carrier_adjusted_delays["delay_rate"].rank(ascending=False)
+    carrier_adjusted_delays["adjusted_rank"] = carrier_adjusted_delays["observed_to_expected_ratio"].rank(ascending=False)
+
+    carrier_adjusted_delays = carrier_adjusted_delays[
+    ["reporting_airline", "operated_flights", "delayed_departure_15_flights", "delay_rate",
+     "expected_delayed_flights", "observed_to_expected_ratio", "crude_rank", "adjusted_rank"]
+    ].sort_values("adjusted_rank")
+
+
+    carrier_adjusted_delays.to_csv("submission/carrier_adjusted_delays.csv", index=False)
+
+    return hourly_delay_rates, carrier_adjusted_delays
+
+    #raise NotImplementedError
