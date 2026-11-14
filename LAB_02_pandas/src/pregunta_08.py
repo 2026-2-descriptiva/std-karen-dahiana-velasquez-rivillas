@@ -12,4 +12,18 @@ def pregunta_08():
         ...
     """
 
-    raise NotImplementedError
+    import pandas as pd
+                
+    data = pd.read_csv(
+    "data/tbl0.tsv",
+    sep="\t"
+    )
+
+    data["suma"] = data["c0"] + data["c2"]
+
+    return data
+
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_08()

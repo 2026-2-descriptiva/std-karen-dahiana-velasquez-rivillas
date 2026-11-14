@@ -15,4 +15,19 @@ def pregunta_12():
         ...
     """
 
-    raise NotImplementedError
+    import pandas as pd
+
+    data = pd.read_csv(
+        "data/tbl2.tsv",
+        sep="\t",
+    )
+
+    data["c5"] = data["c5a"].astype(str) + ":" + data["c5b"].astype(str)
+    resultado = data.groupby("c0")["c5"].apply(lambda x: ",".join(sorted(x))).reset_index()
+
+    return resultado
+
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_12()

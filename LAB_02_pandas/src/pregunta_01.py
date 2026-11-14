@@ -8,4 +8,16 @@ def pregunta_01():
         40
     """
 
-    raise NotImplementedError
+    import pandas as pd
+
+    data = pd.read_csv(
+    "data/tbl0.tsv",
+    sep="\t"
+    )
+
+    #raise NotImplementedError
+
+    return data.shape[0]
+
+if __name__ == "__main__":
+    pregunta_01()

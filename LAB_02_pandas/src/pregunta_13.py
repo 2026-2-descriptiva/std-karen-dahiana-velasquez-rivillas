@@ -14,5 +14,17 @@ def pregunta_13():
         C     81
         ...
     """
+    import pandas as pd
 
-    raise NotImplementedError
+    data_l0 = pd.read_csv("data/tbl0.tsv", sep="\t")
+    data_l2 = pd.read_csv("data/tbl2.tsv", sep="\t")
+
+    union = pd.merge(data_l0, data_l2, on="c0")
+    resultado = union.groupby("c1")["c5b"].sum().sort_index()
+
+    return resultado
+
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_13()

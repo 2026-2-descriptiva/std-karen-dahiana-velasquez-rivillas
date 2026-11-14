@@ -9,4 +9,18 @@ def pregunta_06():
         ["A", "B", "C", "D", "E", "F", "G"]
     """
 
-    raise NotImplementedError
+    import pandas as pd
+                
+    data = pd.read_csv(
+    "data/tbl1.tsv",
+    sep="\t"
+    )
+
+    resultado = list(data["c4"].sort_values().str.upper().unique())
+
+    return resultado
+
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_06()

@@ -13,4 +13,19 @@ def pregunta_03():
         ...
     """
 
-    raise NotImplementedError
+    import pandas as pd
+    
+    data = pd.read_csv(
+    "data/tbl0.tsv",
+    sep="\t"
+    )
+    
+    resultado = data["c1"].value_counts().sort_index()
+
+    return resultado
+
+    #raise NotImplementedError
+
+if __name__ == "__main__":
+    pregunta_03()
+
